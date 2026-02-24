@@ -32,6 +32,8 @@ type (
 		Retry   Retry  `json:"retry"`
 	}
 
+	Queues map[string]Queue
+
 	Declare struct {
 		Alias    []string `json:"alias"`
 		Name     string   `json:"name"`

@@ -89,12 +89,24 @@ func (m *Module) Register(name string, value Any) {
 		m.RegisterConfigs(v)
 	case Queue:
 		m.RegisterQueue(name, v)
+	case Queues:
+		m.RegisterQueues(name, v)
 	case Declare:
 		m.RegisterDeclare(name, v)
 	case Filter:
 		m.RegisterFilter(name, v)
 	case Handler:
 		m.RegisterHandler(name, v)
+	}
+}
+
+func (m *Module) RegisterQueues(prefix string, queues Queues) {
+	for name, queue := range queues {
+		target := name
+		if prefix != "" {
+			target = prefix + "." + name
+		}
+		m.RegisterQueue(target, queue)
 	}
 }
 
