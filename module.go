@@ -355,7 +355,7 @@ func (m *Module) Start() {
 			panic("failed to start queue: " + err.Error())
 		}
 	}
-	fmt.Printf("queue module is running with %d connections, %d queues.\n", len(m.instances), len(m.queues))
+	fmt.Printf("bamgoo queue module is running with %d connections, %d queues.\n", len(m.instances), len(m.queues))
 	m.started = true
 }
 
