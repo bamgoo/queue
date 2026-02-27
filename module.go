@@ -499,7 +499,6 @@ func (inst *Instance) Serve(req Request) Response {
 	}
 
 	inst.open(ctx)
-	bamgoo.CloseMeta(ctx.Meta)
 
 	retry, delay := inst.responseMeta(ctx)
 	return Response{Retry: retry, Delay: delay}
