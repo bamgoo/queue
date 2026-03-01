@@ -1,2 +1,2 @@
 # queue
-bamgoo queue module.
+infrago queue module.

@@ -3,7 +3,7 @@ package queue
 import (
 	"time"
 
-	base "github.com/bamgoo/base"
+	base "github.com/infrago/base"
 )
 
 type (

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bamgoo/bamgoo"
-	. "github.com/bamgoo/base"
-	"github.com/bamgoo/util"
+	"github.com/infrago/infra"
+	. "github.com/infrago/base"
+	"github.com/infrago/util"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	bamgoo.Mount(module)
+	infra.Mount(module)
 }
 
 var module = &Module{
@@ -74,7 +74,7 @@ type (
 
 	msgEnvelope struct {
 		Name     string          `json:"name"`
-		Metadata bamgoo.Metadata `json:"metadata"`
+		Metadata infra.Metadata `json:"metadata"`
 		Payload  Map             `json:"payload"`
 	}
 )
@@ -115,7 +115,7 @@ func (m *Module) RegisterDriver(name string, driver Driver) {
 	defer m.mutex.Unlock()
 
 	if name == "" {
-		name = bamgoo.DEFAULT
+		name = infra.DEFAULT
 	}
 	if driver == nil {
 		panic("invalid queue driver: " + name)
@@ -134,7 +134,7 @@ func (m *Module) RegisterConfig(name string, cfg Config) {
 		return
 	}
 	if name == "" {
-		name = bamgoo.DEFAULT
+		name = infra.DEFAULT
 	}
 	if _, ok := m.configs[name]; ok {
 		panic("queue config already registered: " + name)
@@ -174,14 +174,14 @@ func (m *Module) Config(global Map) {
 		}
 	}
 	if len(root) > 0 {
-		m.configure(bamgoo.DEFAULT, root)
+		m.configure(infra.DEFAULT, root)
 	}
 }
 
 func (m *Module) configure(name string, conf Map) {
 	cfg := Config{
-		Driver: bamgoo.DEFAULT,
-		Codec:  bamgoo.GOB,
+		Driver: infra.DEFAULT,
+		Codec:  infra.GOB,
 		Weight: 1,
 	}
 	if existed, ok := m.configs[name]; ok {
@@ -226,19 +226,19 @@ func (m *Module) Setup() {
 	defer m.mutex.Unlock()
 
 	if len(m.configs) == 0 {
-		m.configs[bamgoo.DEFAULT] = Config{
-			Driver: bamgoo.DEFAULT,
-			Codec:  bamgoo.GOB,
+		m.configs[infra.DEFAULT] = Config{
+			Driver: infra.DEFAULT,
+			Codec:  infra.GOB,
 			Weight: 1,
 		}
 	}
 
 	for name, cfg := range m.configs {
 		if cfg.Driver == "" {
-			cfg.Driver = bamgoo.DEFAULT
+			cfg.Driver = infra.DEFAULT
 		}
 		if cfg.Codec == "" {
-			cfg.Codec = bamgoo.GOB
+			cfg.Codec = infra.GOB
 		}
 		if cfg.Weight == 0 {
 			cfg.Weight = 1
@@ -355,7 +355,7 @@ func (m *Module) Start() {
 			panic("failed to start queue: " + err.Error())
 		}
 	}
-	fmt.Printf("bamgoo queue module is running with %d connections, %d queues.\n", len(m.instances), len(m.queues))
+	fmt.Printf("infrago queue module is running with %d connections, %d queues.\n", len(m.instances), len(m.queues))
 	m.started = true
 }
 
@@ -414,7 +414,7 @@ func (m *Module) publish(connName, name string, value Map, delays ...time.Durati
 	}
 	if dec, ok := m.declares[name]; ok && dec.Args != nil {
 		mapped := Map{}
-		res := bamgoo.Mapping(dec.Args, value, mapped, dec.Nullable, false)
+		res := infra.Mapping(dec.Args, value, mapped, dec.Nullable, false)
 		if res == nil || res.OK() {
 			value = mapped
 		}
@@ -422,7 +422,7 @@ func (m *Module) publish(connName, name string, value Map, delays ...time.Durati
 
 	var data []byte
 	if inst.Config.External {
-		bytes, err := bamgoo.Marshal(inst.Config.Codec, value)
+		bytes, err := infra.Marshal(inst.Config.Codec, value)
 		if err != nil {
 			return err
 		}
@@ -430,10 +430,10 @@ func (m *Module) publish(connName, name string, value Map, delays ...time.Durati
 	} else {
 		body := msgEnvelope{
 			Name:     name,
-			Metadata: bamgoo.NewMeta().Metadata(),
+			Metadata: infra.NewMeta().Metadata(),
 			Payload:  value,
 		}
-		bytes, err := bamgoo.Marshal(inst.Config.Codec, body)
+		bytes, err := infra.Marshal(inst.Config.Codec, body)
 		if err != nil {
 			return err
 		}
@@ -459,7 +459,7 @@ func (inst *Instance) Serve(req Request) Response {
 
 	ctx := &Context{
 		inst:    inst,
-		Meta:    bamgoo.NewMeta(),
+		Meta:    infra.NewMeta(),
 		nexts:   make([]ctxFunc, 0),
 		Setting: Map{},
 		Value:   Map{},
@@ -482,12 +482,12 @@ func (inst *Instance) Serve(req Request) Response {
 
 	if inst.Config.External {
 		payload := Map{}
-		if err := bamgoo.Unmarshal(inst.Config.Codec, req.Data, &payload); err == nil {
+		if err := infra.Unmarshal(inst.Config.Codec, req.Data, &payload); err == nil {
 			ctx.Value = payload
 		}
 	} else {
 		env := msgEnvelope{}
-		if err := bamgoo.Unmarshal(inst.Config.Codec, req.Data, &env); err == nil {
+		if err := infra.Unmarshal(inst.Config.Codec, req.Data, &env); err == nil {
 			ctx.Metadata(env.Metadata)
 			if env.Payload != nil {
 				ctx.Value = env.Payload
@@ -498,7 +498,7 @@ func (inst *Instance) Serve(req Request) Response {
 		}
 	}
 
-	span := ctx.Begin("queue:"+ctx.Name, bamgoo.TraceAttrs("bamgoo", bamgoo.TraceKindQueue, ctx.Name, Map{
+	span := ctx.Begin("queue:"+ctx.Name, infra.TraceAttrs("infrago", infra.TraceKindQueue, ctx.Name, Map{
 		"module":     "queue",
 		"connection": inst.Name,
 		"operation":  "consume",
@@ -509,7 +509,7 @@ func (inst *Instance) Serve(req Request) Response {
 
 	retry, delay := inst.responseMeta(ctx)
 	if retry {
-		span.End(bamgoo.Retry)
+		span.End(infra.Retry)
 	} else if res := ctx.Result(); res != nil && res.Fail() {
 		span.End(res)
 	} else {
@@ -530,7 +530,7 @@ func (inst *Instance) responseMeta(ctx *Context) (bool, time.Duration) {
 		return true, ctx.Body.(time.Duration)
 	}
 
-	if res := ctx.Result(); res != nil && res == bamgoo.Retry {
+	if res := ctx.Result(); res != nil && res == infra.Retry {
 		return true, inst.nextRetryDelay(ctx)
 	}
 
@@ -615,7 +615,7 @@ func (inst *Instance) authorizing(ctx *Context) {
 func (inst *Instance) arguing(ctx *Context) {
 	if ctx.Config != nil && ctx.Config.Args != nil {
 		argsValue := Map{}
-		res := bamgoo.Mapping(ctx.Config.Args, ctx.Value, argsValue, ctx.Config.Nullable, false, ctx.Timezone())
+		res := infra.Mapping(ctx.Config.Args, ctx.Value, argsValue, ctx.Config.Nullable, false, ctx.Timezone())
 		if res != nil && res.Fail() {
 			ctx.Failed(res)
 			return
@@ -665,7 +665,7 @@ func (inst *Instance) denied(ctx *Context) {
 
 func (inst *Instance) body(ctx *Context) {
 	if ctx.Body == nil {
-		if res := ctx.Result(); res != nil && res == bamgoo.Retry {
+		if res := ctx.Result(); res != nil && res == infra.Retry {
 			ctx.Body = retryBody{}
 		} else {
 			ctx.Body = finishBody{}

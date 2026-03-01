@@ -3,7 +3,7 @@ package queue
 import (
 	"time"
 
-	. "github.com/bamgoo/base"
+	. "github.com/infrago/base"
 )
 
 func Publish(name string, values ...Map) error {
