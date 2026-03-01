@@ -498,7 +498,7 @@ func (inst *Instance) Serve(req Request) Response {
 		}
 	}
 
-	span := ctx.Begin("queue:"+ctx.Name, bamgoo.TraceAttrs("bamgoo", bamgoo.TraceKindConsumer, ctx.Name, Map{
+	span := ctx.Begin("queue:"+ctx.Name, bamgoo.TraceAttrs("bamgoo", bamgoo.TraceKindQueue, ctx.Name, Map{
 		"module":     "queue",
 		"connection": inst.Name,
 		"operation":  "consume",
@@ -509,9 +509,9 @@ func (inst *Instance) Serve(req Request) Response {
 
 	retry, delay := inst.responseMeta(ctx)
 	if retry {
-		span.End(errors.New("queue retry"))
+		span.End(bamgoo.Retry)
 	} else if res := ctx.Result(); res != nil && res.Fail() {
-		span.End(errors.New(res.Error()))
+		span.End(res)
 	} else {
 		span.End()
 	}
