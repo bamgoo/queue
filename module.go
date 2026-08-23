@@ -381,7 +381,9 @@ func (m *Module) Start() {
 		}
 		started = append(started, inst.conn)
 	}
-	fmt.Printf("infrago queue module is running with %d connections, %d queues.\n", len(m.instances), len(m.queues))
+	infra.Log(infra.LogLevelInfo, "queue", "module started", Map{
+		"connections": len(m.instances), "queues": len(m.queues),
+	})
 	m.started = true
 }
 
